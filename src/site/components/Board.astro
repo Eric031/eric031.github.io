@@ -1,0 +1,204 @@
+---
+/**
+ * The signature: the whole career as one roadmap.
+ * Lanes × quarters, bars = projects, diamonds = launches, a glowing "today" playhead,
+ * and a dashed "next" segment after today that leads to the contact ticket.
+ */
+import { langOf } from '../copy';
+import { AXIS, QUARTERS, YEARS, BUILD_DATE, getData } from '../data';
+import Bar from './Bar.astro';
+import Glyph from './Glyph.astro';
+
+const { t, board, EPIC, DEV_EPIC, todayLabel } = getData(langOf(Astro.url));
+const quarters = Array.from({ length: QUARTERS }, (_, i) => `Q${(i % 4) + 1}`);
+const today = todayLabel(BUILD_DATE);
+const lastFullYear = BUILD_DATE.getFullYear();
+const roleLane = t.lanes.role;
+---
+
+<section id="roadmap" class="roadmap" aria-labelledby="roadmap-title">
+  <div class="wrap wrap-wide">
+    <div class="board" data-board data-from={AXIS.from} data-to={AXIS.to} style={`--q:${QUARTERS}`}>
+      <header class="board-bar">
+        <div class="board-title">
+          <span class="view-chip"><Glyph name="timeline" />{t.views.timeline}</span>
+          <h2 id="roadmap-title">{t.board.title}</h2>
+          <p class="board-range">{AXIS.from} → {lastFullYear}<span aria-hidden="true"> · </span><span class="sr-only">, </span>{t.board.range}</p>
+        </div>
+        <ul class="legend" aria-label={t.board.legend}>
+          <li><span class="lg lg-bar" aria-hidden="true"></span>{t.board.project}</li>
+          <li><span class="lg lg-diamond" aria-hidden="true"></span>{t.board.launch}</li>
+          <li><span class="lg lg-today" aria-hidden="true"></span>{t.board.today}, <span data-today>{today}</span></li>
+          <li><span class="lg lg-next" aria-hidden="true"></span>{t.board.nextLegend}</li>
+        </ul>
+      </header>
+
+      <div class="board-body">
+        <div class="time-under" aria-hidden="true">
+          <div class="future"></div>
+          <div class="range range-a"><span></span></div>
+          <div class="range range-b"></div>
+        </div>
+
+        <div class="axis" aria-hidden="true">
+          <div class="axis-corner">{t.board.lanes}</div>
+          <div class="axis-time">
+            <div class="axis-years">
+              {
+                YEARS.map((y) => (
+                  <span style={`--span:${y.quarters}`}>
+                    <b>{y.year}</b>
+                    <i>’{String(y.year).slice(2)}</i>
+                  </span>
+                ))
+              }
+            </div>
+            <div class="axis-quarters">{quarters.map((q) => <span>{q}</span>)}</div>
+          </div>
+        </div>
+
+        <ol class="lanes">
+          <li class="lane lane-role" style="--c:#e8edf7;--rows:2" data-reveal>
+            <h3 class="lane-head">
+              <span class="lane-dot" aria-hidden="true"></span>
+              <span class="lane-name">{roleLane}</span>
+            </h3>
+            <ul class="lane-track">
+              <Bar
+                variant="epic"
+                anchor="bar-role"
+                href="#experience"
+                id="Epic"
+                title={t.board.epic.title}
+                label={t.board.epic.label}
+                when={t.board.epic.when}
+                whenA11y={t.board.epic.when}
+                outcome={t.board.epic.outcome}
+                laneLabel={roleLane}
+                cta={t.board.epic.cta}
+                s={EPIC.s.toFixed(4)}
+                e="var(--today)"
+                row={0}
+                status="ongoing"
+                statusLabel={t.status.ongoing}
+                ongoing
+              />
+              <Bar
+                variant="epic"
+                anchor="bar-dev"
+                href="#experience"
+                id="Epic"
+                title={t.board.devEpic.title}
+                label={t.board.devEpic.label}
+                when={t.board.devEpic.when}
+                whenA11y={t.board.devEpic.when}
+                outcome={t.board.devEpic.outcome}
+                laneLabel={roleLane}
+                cta={t.board.devEpic.cta}
+                s={DEV_EPIC.s.toFixed(4)}
+                e="var(--today)"
+                row={1}
+                status="ongoing"
+                statusLabel={t.status.ongoing}
+                ongoing
+              />
+              <Bar
+                variant="next"
+                anchor="bar-next"
+                href="#contact"
+                id="Next"
+                title={t.board.nextBar.title}
+                label={t.board.nextBar.label}
+                labelTail={t.board.nextBar.tail}
+                when={t.board.nextBar.when}
+                whenA11y={t.board.nextBar.when}
+                outcome={t.contact.text}
+                laneLabel={roleLane}
+                cta={t.board.nextBar.cta}
+                s="var(--today)"
+                e="1"
+                row={0}
+                statusLabel={t.board.nextBar.status}
+              />
+            </ul>
+          </li>
+          {
+            board.map(({ lane, rows, items }) => (
+              <li class={`lane lane-${lane.id}`} style={`--c:${lane.color};--rows:${rows}`} data-reveal>
+                <h3 class="lane-head">
+                  <span class="lane-dot" aria-hidden="true" />
+                  <span class="lane-name">{lane.label}</span>
+                  <span class="lane-count" aria-hidden="true">{items.length}</span>
+                </h3>
+                <ul class="lane-track">
+                  {items.map((p) => (
+                    <Bar
+                      variant="project"
+                      anchor={`bar-${p.key}`}
+                      href={`#t-${p.key}`}
+                      id={p.id}
+                      title={p.title}
+                      label={p.bar}
+                      when={p.when}
+                      whenA11y={p.whenA11y}
+                      outcome={p.outcome}
+                      laneLabel={lane.label}
+                      cta={`${t.board.openTicket} ${p.id}`}
+                      s={p.s.toFixed(4)}
+                      e={p.eCss}
+                      row={p.row}
+                      status={p.status}
+                      statusLabel={t.status[p.status]}
+                      ongoing={p.ongoing}
+                      launch={p.launch}
+                      launchSr={t.board.launchSr}
+                      showId
+                    />
+                  ))}
+                </ul>
+              </li>
+            ))
+          }
+        </ol>
+
+        <div class="time-over" aria-hidden="true">
+          <div class="playhead">
+            <span class="playhead-pill"><span class="playhead-dot"></span>{t.board.today} <span data-today>{today}</span></span>
+          </div>
+          <div class="scrub" data-scrub><span class="scrub-label" data-scrub-label></span></div>
+        </div>
+      </div>
+
+      <footer class="board-foot">
+        <ul class="stats">
+          {
+            t.board.facts.map((f) => (
+              <li>
+                <strong>{f.value}</strong> <span>{f.label}</span>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="board-hint">
+          <span class="hint-pointer">{t.board.hintPointer}</span>
+          <span class="hint-touch">{t.board.hintTouch}</span>
+          <span class="hint-list">{t.board.hintList}</span>
+        </p>
+      </footer>
+
+      <div class="tip" data-tip-card aria-hidden="true">
+        <div class="tip-head">
+          <span class="tip-id" data-f="id"></span>
+          <span class="tip-lane" data-f="lane"></span>
+          <span class="tip-status" data-f="status"></span>
+        </div>
+        <p class="tip-title" data-f="title"></p>
+        <p class="tip-when" data-f="when"></p>
+        <p class="tip-outcome" data-f="outcome"></p>
+        <p class="tip-launch"><span class="tip-dia"></span><span data-f="launch"></span></p>
+        <a class="tip-link" href="#work" tabindex="-1"><span data-f="cta">{t.board.openTicket}</span><Glyph name="down" /></a>
+        <span class="tip-arrow"></span>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,74 @@
+---
+/** Small hand-drawn view glyphs for the "planning tool" chrome. Decorative only. */
+interface Props {
+  name: 'timeline' | 'tickets' | 'workspace' | 'board' | 'log' | 'new' | 'up' | 'down' | 'out' | 'copy';
+  class?: string;
+}
+const { name, class: cls } = Astro.props;
+---
+
+<svg class:list={['glyph', cls]} viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+  {
+    name === 'timeline' && (
+      <g>
+        <path d="M2.5 4h6.5" />
+        <path d="M5 8h8.5" />
+        <path d="M3.5 12h5" />
+      </g>
+    )
+  }
+  {
+    name === 'tickets' && (
+      <g>
+        <rect x="2.25" y="2.25" width="11.5" height="11.5" rx="3" />
+        <path d="M5.4 8.1 7.2 9.9l3.4-3.6" />
+      </g>
+    )
+  }
+  {
+    name === 'workspace' && (
+      <g>
+        <path d="M8 1.9 14.1 8 8 14.1 1.9 8Z" />
+        <path d="M8 5.6 10.4 8 8 10.4 5.6 8Z" />
+      </g>
+    )
+  }
+  {
+    name === 'board' && (
+      <g>
+        <rect x="2" y="2.5" width="3.2" height="11" rx="1.1" />
+        <rect x="6.4" y="2.5" width="3.2" height="7" rx="1.1" />
+        <rect x="10.8" y="2.5" width="3.2" height="9" rx="1.1" />
+      </g>
+    )
+  }
+  {
+    name === 'log' && (
+      <g>
+        <path d="M4.5 2v12" />
+        <circle cx="4.5" cy="4.6" r="1.7" />
+        <circle cx="4.5" cy="11.4" r="1.7" />
+        <path d="M8.5 4.6h5M8.5 11.4h3.5" />
+      </g>
+    )
+  }
+  {
+    name === 'new' && (
+      <g>
+        <path d="M8 1.9 14.1 8 8 14.1 1.9 8Z" />
+        <path d="M8 5.7v4.6M5.7 8h4.6" />
+      </g>
+    )
+  }
+  {name === 'up' && <path d="M8 13V3.5M4 7.5l4-4 4 4" />}
+  {name === 'down' && <path d="M8 3v9.5M4 8.5l4 4 4-4" />}
+  {name === 'out' && <path d="M5.5 3.5h7v7M12.2 3.8 3.5 12.5" />}
+  {
+    name === 'copy' && (
+      <g>
+        <rect x="5.25" y="5.25" width="8.5" height="8.5" rx="2" />
+        <path d="M10.75 5.25V4.2a2 2 0 0 0-2-2H4.2a2 2 0 0 0-2 2v4.55a2 2 0 0 0 2 2h1.05" />
+      </g>
+    )
+  }
+</svg>

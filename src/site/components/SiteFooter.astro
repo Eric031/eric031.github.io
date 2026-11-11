@@ -1,0 +1,67 @@
+---
+/** Footer: a minimap of the roadmap (back to the top of the board), links, and a status bar. */
+import { langOf, name, email, github, repo, LINKEDIN } from '../copy';
+import { getData } from '../data';
+import Glyph from './Glyph.astro';
+
+const { t, board, EPIC } = getData(langOf(Astro.url));
+const year = new Date().getFullYear();
+
+// Minimap rows: the role epic, then every sub-row of every lane.
+const rows: { s: string; e: string; c: string; y: number; dia: boolean; dashed?: boolean }[] = [
+  { s: EPIC.s.toFixed(4), e: 'var(--today)', c: '#e8edf7', y: 0, dia: false },
+  { s: 'var(--today)', e: '1', c: '#7dd3fc', y: 0, dia: false, dashed: true },
+  { s: '0', e: 'var(--today)', c: '#e8edf7', y: 1, dia: false },
+];
+let y = 2;
+for (const { lane, rows: n, items } of board) {
+  for (const p of items) rows.push({ s: p.s.toFixed(4), e: p.eCss, c: lane.color, y: y + p.row, dia: !!p.launch });
+  y += n;
+}
+const totalRows = y;
+---
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div class="foot-id">
+      <p class="foot-brand"><span class="brand-mark" aria-hidden="true"></span>{name}</p>
+      <p class="foot-line">{t.footer.line}</p>
+    </div>
+
+    <a class="minimap" href="#roadmap">
+      <span class="minimap-art" style={`--rows:${totalRows}`} aria-hidden="true">
+        {
+          rows.map((r) => (
+            <span
+              class:list={['mm-bar', { 'mm-dashed': r.dashed, 'mm-dia': r.dia }]}
+              style={`--s:${r.s};--e:${r.e};--c:${r.c};--y:${r.y}`}
+            />
+          ))
+        }
+        <span class="mm-today"></span>
+      </span>
+      <span class="minimap-label"><Glyph name="up" />{t.footer.back}</span>
+    </a>
+
+    <ul class="foot-links">
+      <li><a href={`mailto:${email}`}>{email}</a></li>
+      <li><a href={github} rel="me">GitHub</a></li>
+      {
+        LINKEDIN && (
+          <li>
+            <a href={LINKEDIN} rel="me">
+              LinkedIn
+            </a>
+          </li>
+        )
+      }
+      <li><a href="#top">{t.footer.top}</a></li>
+    </ul>
+  </div>
+
+  <div class="wrap foot-bar">
+    <p>© {year} {name}</p>
+    <p>{t.footer.builtWith} · <a href={repo}>{t.footer.source}</a></p>
+    <p class="foot-status"><span class="live-dot" aria-hidden="true"></span>{t.hero.open}</p>
+  </div>
+</footer>

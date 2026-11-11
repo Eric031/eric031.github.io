@@ -1,0 +1,99 @@
+---
+/**
+ * The whole site as one planning tool, with several views of one project, "Dušan Erić":
+ *  - Header      = the project header (kicker, name, role, lead, properties strip).
+ *  - Timeline    = a Gantt of his work from 2024 to today. Swimlanes, bars, launch diamonds,
+ *                  a glowing "today" playhead that sweeps in on load and draws the bars,
+ *                  and a dashed "next" segment that leads to contact.
+ *                  Mobile: the same markup becomes a task-list Gantt.
+ *  - Tickets     = case studies as issues, each with a drawn attachment.
+ *  - Workspace   = BAT DEV, his studio, in its own colour.
+ *  - Board       = Plan → Build → Run kanban; each column's policy is one of his working rules.
+ *  - Changelog   = experience. New ticket = contact. Footer = roadmap minimap.
+ * Brand DNA from the LinkedIn banner: navy #0a1020, cyan/indigo/teal mesh, 52px grid,
+ * faded mono code, cyan→indigo rule, Plus Jakarta Sans + DM Mono.
+ */
+import './styles/base.css';
+import './styles/board.css';
+import './styles/sections.css';
+import './styles/visuals.css';
+import type { Lang } from './copy';
+import { TODAY, QUARTERS, getData } from './data';
+import SiteHeader from './components/SiteHeader.astro';
+import Hero from './components/Hero.astro';
+import Board from './components/Board.astro';
+import Tickets from './components/Tickets.astro';
+import Studio from './components/Studio.astro';
+import Capabilities from './components/Capabilities.astro';
+import Changelog from './components/Changelog.astro';
+import Contact from './components/Contact.astro';
+import SiteFooter from './components/SiteFooter.astro';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const { t } = getData(lang);
+
+const site = Astro.site ?? new URL('https://eric031.github.io');
+const enUrl = new URL('/', site).href;
+const srUrl = new URL('/sr/', site).href;
+const canonical = lang === 'sr' ? srUrl : enUrl;
+
+// The favicon is the launch diamond from the board.
+const favicon =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%237dd3fc'/%3E%3Cstop offset='1' stop-color='%23818cf8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='%230a1020'/%3E%3Cpath d='M32 10l22 22-22 22-22-22z' fill='url(%23g)'/%3E%3Cpath d='M32 24l8 8-8 8-8-8z' fill='%230a1020'/%3E%3C/svg%3E";
+---
+
+<!doctype html>
+<html lang={t.htmlLang} style={`--today:${TODAY.toFixed(4)};--q:${QUARTERS}`}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{t.meta.title}</title>
+    <meta name="description" content={t.meta.description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="sr" href={srUrl} />
+    <link rel="alternate" hreflang="x-default" href={enUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={t.meta.title} />
+    <meta property="og:description" content={t.meta.description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={lang === 'sr' ? 'sr_RS' : 'en_GB'} />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0a1020" />
+    <link rel="icon" href={favicon} type="image/svg+xml" />
+    <link rel="preload" href="/fonts/jakarta-variable.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/dmmono-500.woff2" as="font" type="font/woff2" crossorigin />
+    <script is:inline>
+      // Hidden entrance states only apply with .js; if the page script never arrives, drop them.
+      document.documentElement.classList.add('js');
+      setTimeout(function () { if (!window.__roadmap) document.documentElement.classList.remove('js'); }, 4000);
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">{t.skip}</a>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <SiteHeader />
+
+    <main id="main" tabindex="-1">
+      <Hero />
+      <Board />
+      <Tickets />
+      <Studio />
+      <Capabilities />
+      <Changelog />
+      <Contact />
+    </main>
+
+    <SiteFooter />
+
+    <p class="sr-only" aria-live="polite" data-announce></p>
+
+    <script>
+      import './client';
+    </script>
+  </body>
+</html>

@@ -1,0 +1,49 @@
+---
+/** BAT DEV gets its own workspace: same tool, different team, its own colour. */
+import { langOf, STUDIO } from '../copy';
+import { getData } from '../data';
+import Ticket from './Ticket.astro';
+import Glyph from './Glyph.astro';
+
+const { t, studioTickets } = getData(langOf(Astro.url));
+---
+
+<section id="studio" class="sec studio" aria-labelledby="studio-title">
+  <div class="studio-glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="studio-head" data-reveal>
+      <p class="view-chip view-chip-studio"><Glyph name="workspace" />{t.views.workspace} <span class="ws-sep" aria-hidden="true">/</span> {STUDIO.name}</p>
+
+      <h2 id="studio-title" class="studio-title">
+        <span class="studio-word">{STUDIO.name}</span>
+        <span class="studio-tag">{t.studio.tagline}</span>
+      </h2>
+
+      <div class="studio-copy">
+        <blockquote class="studio-line">
+          <p>{t.studio.line}</p>
+        </blockquote>
+        <p class="studio-me">{t.studio.me}</p>
+        <a class="btn btn-studio" href={STUDIO.url} rel="noopener">
+          <span>{STUDIO.urlLabel}</span>
+          <Glyph name="out" />
+        </a>
+      </div>
+    </div>
+
+    <ul class="services" aria-label={t.studio.servicesAria} data-reveal>
+      {
+        t.studio.services.map((s, i) => (
+          <li style={`--i:${i}`}>
+            <span class="svc-dia" aria-hidden="true" />
+            <span class="svc-name">{s}</span>
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="studio-tickets">
+      {studioTickets.map((p) => <Ticket p={p} featured />)}
+    </div>
+  </div>
+</section>

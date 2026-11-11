@@ -1,0 +1,28 @@
+---
+import { langOf } from '../copy';
+import { getData } from '../data';
+import Ticket from './Ticket.astro';
+import Glyph from './Glyph.astro';
+
+const { t, workTickets } = getData(langOf(Astro.url));
+---
+
+<section id="work" class="sec sec-work" aria-labelledby="work-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="view-chip"><Glyph name="tickets" />{t.views.tickets} <span class="view-count">{workTickets.length}</span></p>
+      <h2 id="work-title">{t.work.title}</h2>
+      <p class="sec-intro">{t.work.intro}</p>
+    </header>
+
+    <ol class="tickets">
+      {
+        workTickets.map((p) => (
+          <li>
+            <Ticket p={p} />
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

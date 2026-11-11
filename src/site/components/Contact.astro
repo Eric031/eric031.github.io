@@ -1,0 +1,67 @@
+---
+/** Contact as a "new ticket" composer. The roadmap's dashed "Next" segment leads here. */
+import { langOf, name, email, github, LINKEDIN } from '../copy';
+import { getData } from '../data';
+import Glyph from './Glyph.astro';
+
+const { t } = getData(langOf(Astro.url));
+---
+
+<section id="contact" class="sec sec-contact" aria-labelledby="contact-title">
+  <div class="contact-glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="composer" data-reveal>
+      <div class="composer-bar">
+        <p class="view-chip"><Glyph name="new" />{t.views.newTicket}</p>
+        <p class="composer-id" aria-hidden="true">DE-NEXT</p>
+        <p class="composer-state"><span class="live-dot" aria-hidden="true"></span>{t.hero.open}</p>
+      </div>
+
+      <div class="composer-body">
+        <h2 id="contact-title" class="composer-title">{t.contact.title}<span class="caret" aria-hidden="true"></span></h2>
+        <p class="composer-text">{t.contact.text}</p>
+
+        <a class="mail-big" href={`mailto:${email}`}>
+          <span class="mail-big-k">{t.contact.replyTo}</span>
+          <span class="mail-big-v">{email}</span>
+          <span class="mail-big-go" aria-hidden="true"><Glyph name="out" /></span>
+        </a>
+
+        <dl class="composer-props">
+          <div>
+            <dt>{t.contact.assignee}</dt>
+            <dd><span class="brand-mark brand-mark-sm" aria-hidden="true"></span>{name}</dd>
+          </div>
+          <div>
+            <dt>{t.contact.base}</dt>
+            <dd>{t.hero.baseValue}</dd>
+          </div>
+          <div>
+            <dt>{t.contact.openTo}</dt>
+            <dd>{t.contact.openToValue}</dd>
+          </div>
+          <div>
+            <dt>{t.contact.labels}</dt>
+            <dd class="composer-labels">{t.contact.labelValues.map((l) => <span>{l}</span>)}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div class="composer-actions">
+        <a class="btn btn-primary" href={`mailto:${email}`}>{t.hero.mail}</a>
+        <button class="btn btn-ghost copy-btn" type="button" data-copy={email}>
+          <Glyph name="copy" /><span data-copy-label>{t.contact.copy}</span>
+        </button>
+        <a class="btn btn-ghost" href={github} rel="me"><span>GitHub</span><Glyph name="out" /></a>
+        {
+          LINKEDIN && (
+            <a class="btn btn-ghost" href={LINKEDIN} rel="me">
+              <span>LinkedIn</span>
+              <Glyph name="out" />
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </div>
+</section>

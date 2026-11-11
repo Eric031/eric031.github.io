@@ -1,0 +1,65 @@
+---
+/**
+ * Skills as a kanban board: Plan → Build → Run.
+ * Each column's "policy" is one of his working rules, so "How I work" and "Skills"
+ * read as one system. Cards are tagged by lane.
+ */
+import { langOf } from '../copy';
+import { getData } from '../data';
+import Glyph from './Glyph.astro';
+
+const { t, PHASES, DOMAINS } = getData(langOf(Astro.url));
+const color = Object.fromEntries(DOMAINS.map((d) => [d.id, d.color]));
+const label = Object.fromEntries(DOMAINS.map((d) => [d.id, d.label]));
+---
+
+<section id="skills" class="sec sec-skills" aria-labelledby="skills-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="view-chip"><Glyph name="board" />{t.views.board}</p>
+      <h2 id="skills-title">{t.skills.title}</h2>
+      <p class="sec-intro">{t.skills.intro}</p>
+    </header>
+
+    <div class="filters" role="group" aria-label={t.skills.filterAria} data-filters hidden>
+      <button type="button" aria-pressed="true" data-d="all">{t.skills.all}</button>
+      {
+        DOMAINS.map((d) => (
+          <button type="button" aria-pressed="false" data-d={d.id} style={`--c:${d.color}`}>
+            <span class="f-dot" aria-hidden="true" />
+            {d.label}
+          </button>
+        ))
+      }
+    </div>
+
+    <div class="kanban" data-kanban>
+      {
+        PHASES.map((ph, ci) => (
+          <div class={`col col-${ph.id}`} style={`--ci:${ci}`} data-reveal>
+            <div class="col-head">
+              <h3 class="col-name">
+                {ph.name}
+                <span class="col-count" aria-hidden="true">{ph.cards.length}</span>
+              </h3>
+              <div class="policy">
+                <p class="policy-k">{t.skills.policy}</p>
+                <p class="policy-title">{ph.policy.title}</p>
+                <p class="policy-text">{ph.policy.text}</p>
+              </div>
+            </div>
+            <ul class="cards" aria-label={`${ph.name}: ${t.skills.suffix}`}>
+              {ph.cards.map((c, i) => (
+                <li class="card" data-d={c.d} style={`--c:${color[c.d]};--i:${i}`}>
+                  <span class="card-dot" aria-hidden="true" />
+                  <span class="card-text">{c.text}</span>
+                  <span class="sr-only"> ({label[c.d]})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

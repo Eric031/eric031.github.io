@@ -1,0 +1,287 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Ticket attachments (Visual.astro), the collapsible criteria and the clock.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* The shared Jakarta file is a Latin-only subset (no š, ć, č, ž, đ). This companion subset
+   of the same family fills exactly those letters, so "Dušan Erić" never mixes typefaces.
+   Its descriptors match the main face so browsers merge the two. */
+@font-face {
+  font-family: 'Jakarta';
+  src: url('/fonts/jakarta-sr.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0106-0107, U+010C-010D, U+0110-0111, U+0160-0161, U+017D-017E;
+}
+
+.clock {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Acceptance criteria fold away on phones (client.ts closes all but the first). */
+.ac > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.ac > summary::-webkit-details-marker {
+  display: none;
+}
+.ac-chev {
+  width: 7px;
+  height: 7px;
+  margin-left: 4px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  opacity: 0.7;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.25s var(--ease);
+}
+.ac:not([open]) .ac-chev {
+  transform: rotate(-45deg);
+}
+
+.att {
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background:
+    radial-gradient(120% 100% at 0% 0%, color-mix(in srgb, var(--c) 11%, transparent), transparent 62%),
+    rgba(8, 13, 28, 0.55);
+  overflow: hidden;
+}
+.att figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 12px 0;
+  color: var(--ink-4);
+  font: 500 10px/1.4 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.att figcaption span:last-child {
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+@media (max-width: 899px) {
+  .att {
+    max-width: 440px;
+  }
+}
+
+.vis {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.vis text {
+  font-family: var(--mono);
+}
+.v-t {
+  fill: var(--ink-4);
+  font-size: 9px;
+}
+.v-T {
+  fill: var(--ink-2);
+  font-size: 11px;
+  font-weight: 500;
+}
+.vis .v-big {
+  fill: var(--c);
+  font: 600 30px/1 var(--font);
+  letter-spacing: -0.02em;
+}
+.v-dark {
+  fill: #0a1020;
+  font-size: 10px;
+  font-weight: 500;
+}
+.v-okt {
+  fill: #86efac;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.v-frame {
+  fill: rgba(255, 255, 255, 0.025);
+  stroke: var(--line-2);
+}
+.v-solid {
+  fill: #10182f;
+}
+.v-bubble {
+  fill: #141e3a;
+  stroke: var(--line-2);
+}
+.v-line {
+  fill: none;
+  stroke: var(--line-2);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+.v-dim {
+  fill: rgba(255, 255, 255, 0.08);
+}
+.v-dim2 {
+  fill: rgba(255, 255, 255, 0.16);
+}
+.v-o3 {
+  opacity: 0.35;
+}
+.v-o6 {
+  opacity: 0.65;
+}
+.v-c {
+  fill: var(--c);
+}
+.v-cs {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.v-thin {
+  stroke-width: 1.3;
+}
+.v-card {
+  fill: color-mix(in srgb, var(--c) 16%, transparent);
+  stroke: var(--c);
+  stroke-width: 1.2;
+}
+.v-chip {
+  fill: #fcd34d;
+  opacity: 0.85;
+}
+.v-shield {
+  fill: color-mix(in srgb, var(--c) 12%, transparent);
+  stroke: var(--c);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.v-tick,
+.v-tick-dark {
+  fill: none;
+  stroke: #86efac;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.v-tick-dark {
+  stroke: #0a1020;
+}
+.v-okbg {
+  fill: rgba(134, 239, 172, 0.12);
+  stroke: #86efac;
+  stroke-width: 1.2;
+}
+.v-ok,
+.v-dot {
+  fill: #86efac;
+}
+.v-amber {
+  fill: #fcd34d;
+}
+.v-pill {
+  fill: rgba(255, 255, 255, 0.04);
+  stroke: var(--line-2);
+}
+.v-flow {
+  fill: none;
+  stroke: var(--c);
+  stroke-width: 1.6;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .v-grow,
+  .v-pop,
+  .v-wave {
+    transform-box: fill-box;
+  }
+  .v-grow {
+    transform-origin: left center;
+    transition: transform 1.3s var(--ease-out) calc(0.35s + var(--i, 0) * 0.25s);
+  }
+  .v-pop {
+    transform-origin: center;
+    transition:
+      opacity 0.4s,
+      transform 0.6s var(--ease-out);
+    transition-delay: calc(0.45s + var(--i, 0) * 0.09s);
+  }
+  .v-turn {
+    transition: fill 0.5s calc(0.6s + var(--i, 0) * 0.16s);
+  }
+  .v-draw {
+    stroke-dasharray: 140;
+    transition: stroke-dashoffset 1.6s var(--ease-out) 0.4s;
+  }
+  html.js .ticket:not(.is-in) .v-grow {
+    transform: scaleX(0);
+  }
+  html.js .ticket:not(.is-in) .v-pop {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  html.js .ticket:not(.is-in) .v-turn {
+    fill: #fda4af;
+  }
+  html.js .ticket:not(.is-in) .v-draw {
+    stroke-dashoffset: 140;
+  }
+
+  /* Loops run only while a ticket is hovered or focused, so nothing moves forever on its own. */
+  .v-flow {
+    animation: v-flow 0.9s linear infinite paused;
+  }
+  .v-wave {
+    transform-origin: center;
+    animation: v-wave 0.8s ease-in-out infinite alternate paused;
+    animation-delay: calc(var(--i) * -0.13s);
+  }
+  .v-blink {
+    animation: v-blink 1.2s ease-in-out infinite paused;
+  }
+  .v-push {
+    animation: v-push 3s var(--ease-out) -1s infinite paused;
+  }
+  .ticket:is(:hover, :focus-within) :is(.v-flow, .v-wave, .v-blink, .v-push) {
+    animation-play-state: running;
+  }
+}
+@keyframes v-flow {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+@keyframes v-wave {
+  from {
+    transform: scaleY(0.4);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes v-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+@keyframes v-push {
+  0%,
+  10% {
+    transform: translateY(-8px);
+    opacity: 0;
+  }
+  22%,
+  82% {
+    transform: none;
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

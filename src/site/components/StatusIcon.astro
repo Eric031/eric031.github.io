@@ -1,0 +1,44 @@
+---
+/** Ticket status glyph. Decorative: the status is always written next to it in text. */
+import type { Status } from '../data';
+interface Props {
+  status: Status;
+}
+const { status } = Astro.props;
+---
+
+<svg class={`status-icon status-${status}`} viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+  {
+    status === 'shipped' && (
+      <g>
+        <circle cx="8" cy="8" r="6.5" class="si-fill" />
+        <path d="m5.3 8.2 1.8 1.8 3.6-3.8" class="si-cut" />
+      </g>
+    )
+  }
+  {
+    status === 'live' && (
+      <g>
+        <circle cx="8" cy="8" r="6.5" class="si-ring si-pulse" />
+        <circle cx="8" cy="8" r="3.2" class="si-fill" />
+      </g>
+    )
+  }
+  {
+    status === 'running' && (
+      <g>
+        <circle cx="8" cy="8" r="6.25" class="si-track" />
+        <path d="M8 1.75a6.25 6.25 0 0 1 6.25 6.25" class="si-arc" />
+        <circle cx="8" cy="8" r="2.2" class="si-fill" />
+      </g>
+    )
+  }
+  {
+    status === 'ongoing' && (
+      <g>
+        <circle cx="8" cy="8" r="6.25" class="si-track" />
+        <path d="M8 3.6a4.4 4.4 0 0 1 0 8.8Z" class="si-fill" />
+      </g>
+    )
+  }
+</svg>

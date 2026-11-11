@@ -1,0 +1,42 @@
+---
+/** Experience as a changelog: newest first, the current entry glows like the "today" line. */
+import { langOf } from '../copy';
+import { getData } from '../data';
+import Glyph from './Glyph.astro';
+
+const { t } = getData(langOf(Astro.url));
+---
+
+<section id="experience" class="sec sec-log" aria-labelledby="exp-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="view-chip"><Glyph name="log" />{t.views.changelog}</p>
+      <h2 id="exp-title">{t.experience.title}</h2>
+    </header>
+
+    <ol class="log">
+      {
+        t.experience.items.map((r) => (
+          <li class:list={['log-item', { 'is-now': r.now }]} data-reveal>
+            <span class="log-node" aria-hidden="true" />
+            <p class="log-period">
+              <span class="log-tag">{r.tag}</span>
+              <span class="log-when">{r.period}</span>
+            </p>
+            <div class="log-body">
+              <h3 class="log-role">{r.role}</h3>
+              <p class="log-org">{r.org}</p>
+              <p class="log-text">{r.text}</p>
+              {r.href && (
+                <a class="log-link" href={r.href}>
+                  {t.experience.open}
+                  <Glyph name="up" />
+                </a>
+              )}
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>

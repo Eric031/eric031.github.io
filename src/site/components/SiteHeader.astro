@@ -1,0 +1,84 @@
+---
+import { langOf, name, email } from '../copy';
+import { getData } from '../data';
+
+const lang = langOf(Astro.url);
+const { t } = getData(lang);
+
+const links = [
+  { href: '#roadmap', label: t.nav.roadmap, view: t.views.timeline },
+  { href: '#work', label: t.nav.work, view: t.views.tickets },
+  { href: '#studio', label: t.nav.studio, view: t.views.workspace },
+  { href: '#skills', label: t.nav.skills, view: t.views.board },
+  { href: '#experience', label: t.nav.experience, view: t.views.changelog },
+];
+---
+
+<header class="top" data-top>
+  <div class="top-in">
+    <a class="brand" href="#top">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="brand-name">{name}</span>
+      <span class="brand-path" aria-hidden="true">/ roadmap</span>
+    </a>
+
+    <nav class="nav" aria-label={t.nav.label}>
+      <ul>
+        {
+          links.map((l) => (
+            <li>
+              <a href={l.href} data-spy={l.href.slice(1)}>
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="top-actions">
+      <nav class="lang" aria-label={t.nav.language}>
+        <a href="/" hreflang="en" lang="en" aria-current={lang === 'en' ? 'true' : undefined}>
+          <span aria-hidden="true">EN</span><span class="sr-only">English</span>
+        </a>
+        <a href="/sr/" hreflang="sr" lang="sr" aria-current={lang === 'sr' ? 'true' : undefined}>
+          <span aria-hidden="true">SR</span><span class="sr-only">Srpski</span>
+        </a>
+      </nav>
+
+      <a class="btn btn-mail" href={`mailto:${email}`}>
+        <span>{t.hero.mail}</span>
+      </a>
+
+      <details class="menu" data-menu>
+        <summary>
+          <span class="menu-icon" aria-hidden="true"><i></i><i></i></span>
+          <span class="menu-label">{t.nav.menu}</span>
+        </summary>
+        <div class="menu-panel">
+          <nav aria-label={`${t.nav.label} ${t.nav.menuSuffix}`}>
+            <ul>
+              {
+                links.map((l) => (
+                  <li>
+                    <a href={l.href}>
+                      <span>{l.label}</span>
+                      <span class="menu-hint" aria-hidden="true">{l.view}</span>
+                    </a>
+                  </li>
+                ))
+              }
+              <li>
+                <a href="#contact">
+                  <span>{t.nav.contact}</span>
+                  <span class="menu-hint" aria-hidden="true">{t.views.newTicket}</span>
+                </a>
+              </li>
+            </ul>
+          </nav>
+          <a class="menu-mail" href={`mailto:${email}`}>{email}</a>
+        </div>
+      </details>
+    </div>
+  </div>
+</header>

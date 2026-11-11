@@ -1,0 +1,1268 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Roadmap direction · the board (signature)
+   Desktop ≥ 900px: swimlanes × quarters, bars positioned with --s / --e (0..1),
+   a "today" playhead that sweeps in and draws the bars, tooltip on hover/focus/tap.
+   Mobile < 900px: the same markup as a task-list Gantt (one row per ticket, each with
+   its own track on one shared scale, a sticky year axis, today ticks per row).
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.roadmap {
+  position: relative;
+  padding-bottom: clamp(24px, 4vw, 40px);
+}
+
+.board {
+  --label-w: 190px;
+  --pr: 22px;
+  --row-h: 42px;
+  --bar-h: 30px;
+  --D: 2.4s; /* time the playhead takes to cross the whole axis */
+  --lead: 0.35s; /* wait before the sweep starts */
+  --board-bg: #0d1530;
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background:
+    radial-gradient(1200px 300px at 85% 0%, rgba(56, 189, 248, 0.07), transparent 70%),
+    linear-gradient(180deg, rgba(17, 27, 52, 0.9), rgba(11, 18, 37, 0.94));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 50px 140px -60px rgba(56, 189, 248, 0.38),
+    0 30px 70px -40px rgba(0, 0, 0, 0.7);
+}
+
+/* ── Toolbar ── */
+
+.board-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 28px;
+  padding: 15px 22px;
+  border-bottom: 1px solid var(--line);
+}
+.board-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+.board-title .view-chip {
+  padding: 6px 9px 6px 8px;
+  border-radius: 8px;
+  background: rgba(125, 211, 252, 0.1);
+  letter-spacing: 0.12em;
+  font-size: 11px;
+}
+.board-title h2 {
+  font-size: 21px;
+  font-weight: 740;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+.board-range {
+  color: var(--ink-3);
+  font: 400 12.5px/1 var(--mono);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 20px;
+  color: var(--ink-3);
+  font: 400 12px/1 var(--mono);
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  white-space: nowrap;
+}
+.lg {
+  display: inline-block;
+  flex: none;
+}
+.lg-bar {
+  width: 22px;
+  height: 10px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(125, 211, 252, 0.5), rgba(125, 211, 252, 0.18));
+  box-shadow: inset 2px 0 0 var(--cyan);
+}
+.lg-diamond {
+  width: 9px;
+  height: 9px;
+  margin-inline: 2px;
+  border-radius: 2px;
+  background: var(--cyan);
+  box-shadow: 0 0 10px rgba(125, 211, 252, 0.7);
+  transform: rotate(45deg);
+}
+.lg-today {
+  width: 2px;
+  height: 15px;
+  margin-inline: 4px;
+  border-radius: 1px;
+  background: linear-gradient(var(--cyan), var(--teal));
+  box-shadow: 0 0 8px rgba(45, 212, 191, 0.9);
+}
+.lg-next {
+  width: 22px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px dashed rgba(125, 211, 252, 0.65);
+}
+
+/* ── Body: axis, lanes, time layers ── */
+
+.board-body {
+  position: relative;
+}
+
+.axis {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: var(--label-w) minmax(0, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+.axis-corner {
+  display: flex;
+  align-items: flex-end;
+  padding: 0 18px 10px 22px;
+  border-right: 1px solid var(--line);
+  color: var(--ink-4);
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.axis-time {
+  margin-right: var(--pr);
+}
+.axis-years,
+.axis-quarters {
+  display: grid;
+  grid-template-columns: repeat(var(--q), minmax(0, 1fr));
+}
+.axis-years > span {
+  grid-column: span var(--span);
+  padding: 13px 0 3px 10px;
+  border-left: 1px solid var(--line-2);
+  color: var(--ink-2);
+  font: 500 12.5px/1 var(--mono);
+  letter-spacing: 0.04em;
+}
+.axis-years > span:first-child {
+  border-left-color: transparent;
+}
+.axis-years b {
+  font-weight: inherit;
+}
+.axis-years i {
+  display: none;
+  font-style: normal;
+}
+/* The last, partial year is "next": quieter, and right-aligned so the today pill never covers it. */
+.axis-years > span:last-child {
+  padding-right: 10px;
+  color: var(--ink-4);
+  text-align: right;
+}
+.axis-quarters span {
+  padding: 5px 0 10px 10px;
+  color: var(--ink-4);
+  font: 400 10.5px/1 var(--mono);
+}
+
+.time-under,
+.time-over {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--label-w);
+  right: var(--pr);
+  pointer-events: none;
+}
+.time-under {
+  z-index: 0;
+  background-image:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.032) 1px, transparent 1px);
+  background-size:
+    calc(400% / var(--q)) 100%,
+    calc(100% / var(--q)) 100%;
+}
+.future {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--today) * 100%);
+  right: calc(-1 * var(--pr));
+  background: repeating-linear-gradient(135deg, rgba(125, 211, 252, 0.06) 0 1px, transparent 1px 9px);
+  -webkit-mask-image: linear-gradient(90deg, #000 30%, rgba(0, 0, 0, 0.35));
+  mask-image: linear-gradient(90deg, #000 30%, rgba(0, 0, 0, 0.35));
+}
+/* Hover range: the hovered bar's span, projected onto the axis. Transform-only, so it never shifts layout. */
+.range {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    transform 0.3s var(--ease);
+}
+.range-a {
+  transform: translateX(calc(var(--hs, 0) * 100%));
+}
+.range-b {
+  transform: translateX(calc(var(--he, 0) * 100%));
+}
+.range::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-left: 1px dashed color-mix(in srgb, var(--hc, #7dd3fc) 60%, transparent);
+}
+.range-a > span {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--hc, #7dd3fc) 14%, transparent),
+    color-mix(in srgb, var(--hc, #7dd3fc) 3%, transparent)
+  );
+  transform: scaleX(calc(var(--he, 0) - var(--hs, 0)));
+  transform-origin: left center;
+  transition: transform 0.3s var(--ease);
+}
+.board.has-active .range {
+  opacity: 1;
+}
+
+.lanes {
+  position: relative;
+  z-index: 1;
+}
+.lane {
+  display: grid;
+  grid-template-columns: var(--label-w) minmax(0, 1fr);
+  border-bottom: 1px solid var(--line-1);
+}
+.lane:last-child {
+  border-bottom: 0;
+}
+.lane-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 0 16px 0 22px;
+  border-right: 1px solid var(--line);
+  font-size: 13.5px;
+  font-weight: 650;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+  transition: background-color 0.2s;
+}
+.lane-name {
+  white-space: nowrap;
+}
+.lane-count {
+  margin-left: auto;
+  color: var(--ink-4);
+  font: 400 11px/1 var(--mono);
+}
+.lane.is-hot .lane-head {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 10%, transparent), transparent);
+}
+.lane-track {
+  position: relative;
+  height: calc(var(--rows) * var(--row-h) + 14px);
+  margin-right: var(--pr);
+}
+
+/* ── Bars ── */
+
+.bar {
+  position: absolute;
+  left: calc(var(--s) * 100%);
+  width: calc((var(--e) - var(--s)) * 100%);
+  top: calc(7px + var(--row) * var(--row-h) + (var(--row-h) - var(--bar-h)) / 2);
+  height: var(--bar-h);
+}
+.item {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  border-radius: 9px;
+  color: var(--ink);
+  text-decoration: none;
+  container-type: inline-size;
+  -webkit-tap-highlight-color: transparent;
+}
+.item:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+.item-fill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--c) 32%, transparent),
+    color-mix(in srgb, var(--c) 14%, transparent)
+  );
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent),
+    inset 3px 0 0 var(--c);
+  transform-origin: left center;
+  transition:
+    background-color 0.2s,
+    box-shadow 0.2s,
+    filter 0.2s;
+}
+.is-ongoing > .item .item-fill {
+  border-radius: 9px 3px 3px 9px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--c) 30%, transparent),
+    color-mix(in srgb, var(--c) 12%, transparent) 55%,
+    color-mix(in srgb, var(--c) 34%, transparent)
+  );
+}
+.item-label {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 0 12px 0 14px;
+  font-size: 12.5px;
+  font-weight: 620;
+  letter-spacing: -0.003em;
+  white-space: nowrap;
+}
+.item-label-id {
+  flex: none;
+  color: var(--c);
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.02em;
+}
+.item-label-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@container (max-width: 150px) {
+  .item-label-id {
+    display: none;
+  }
+}
+@container (max-width: 150px) {
+  .item-label-tail {
+    display: none;
+  }
+}
+@container (max-width: 46px) {
+  .item-label {
+    visibility: hidden;
+  }
+}
+
+/* Labels stay invisible until the script has placed them, so placing them never shifts anything. */
+html.js .board:not(.is-fit) .item-label {
+  visibility: hidden;
+}
+
+/* When a label does not fit inside its bar, the script moves it into the empty past,
+   right-aligned against the bar's start, with a short connector. */
+.bar.is-out .item-label {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + 10px);
+  padding: 0;
+  color: var(--ink-2);
+  visibility: visible;
+  transform: translateY(-50%);
+}
+.bar.is-out .item-label-id {
+  display: inline;
+}
+.bar.is-out .item-label-text {
+  overflow: visible;
+}
+.bar.is-out .item-label::after {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 1px;
+  margin-left: 1px;
+  background: color-mix(in srgb, var(--c) 70%, transparent);
+}
+.bar.is-out .item:hover .item-label,
+.bar.is-out .item.is-active .item-label {
+  color: var(--ink);
+}
+
+.item-now {
+  display: none;
+}
+
+.item-diamond {
+  position: absolute;
+  top: 50%;
+  right: -7px;
+  width: 13px;
+  height: 13px;
+  margin-top: -6.5px;
+  border-radius: 3px;
+  background: var(--c);
+  box-shadow:
+    0 0 0 3px var(--board-bg),
+    0 0 18px color-mix(in srgb, var(--c) 85%, transparent);
+  transform: rotate(45deg);
+}
+
+/* Hover, focus, tap */
+.item:hover .item-fill,
+.item.is-active .item-fill {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--c) 48%, transparent),
+    color-mix(in srgb, var(--c) 24%, transparent)
+  );
+  box-shadow:
+    inset 0 0 0 1px var(--c),
+    inset 3px 0 0 var(--c),
+    0 12px 34px -12px color-mix(in srgb, var(--c) 80%, transparent);
+}
+.item:active .item-fill {
+  filter: brightness(1.18);
+}
+.item::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 2px var(--c),
+    0 0 34px color-mix(in srgb, var(--c) 70%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+.item.is-flash::after {
+  animation: flash 2s var(--ease-out);
+}
+@keyframes flash {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* The role epic: a summary bar across the whole tenure. */
+.bar-epic .item {
+  right: 10px;
+}
+.bar-epic .item-fill {
+  background: linear-gradient(
+    90deg,
+    rgba(232, 237, 247, 0.1),
+    rgba(125, 211, 252, 0.15) 70%,
+    rgba(129, 140, 248, 0.24)
+  );
+  box-shadow: inset 0 0 0 1px rgba(232, 237, 247, 0.2);
+}
+.bar-epic .item-label {
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 650;
+}
+.bar-epic .item-label::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--mint);
+  box-shadow: 0 0 10px var(--mint);
+}
+
+/* The dashed future segment: the call to action inside the chart. */
+.bar-next .item {
+  left: 10px;
+}
+.bar-next .item-fill {
+  background: repeating-linear-gradient(-45deg, rgba(125, 211, 252, 0.09) 0 6px, transparent 6px 12px);
+  box-shadow: none;
+}
+.bar-next .item-fill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px dashed rgba(125, 211, 252, 0.7);
+}
+.bar-next .item-label {
+  padding: 0 10px 0 12px;
+  color: var(--cyan);
+  font: 500 11px/1 var(--mono);
+  letter-spacing: 0;
+}
+.bar-next .item:hover .item-fill,
+.bar-next .item.is-active .item-fill {
+  background: repeating-linear-gradient(-45deg, rgba(125, 211, 252, 0.18) 0 6px, transparent 6px 12px);
+  box-shadow: 0 12px 34px -12px rgba(125, 211, 252, 0.8);
+}
+
+/* ── Playhead (today) and scrubber ── */
+
+.time-over {
+  z-index: 2;
+  overflow: hidden;
+}
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  transform: translateX(calc(var(--today) * 100%));
+}
+.playhead::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  border-radius: 1px;
+  background: linear-gradient(180deg, var(--cyan), var(--teal) 60%, rgba(45, 212, 191, 0.35));
+  box-shadow:
+    0 0 10px rgba(45, 212, 191, 0.95),
+    0 0 30px rgba(125, 211, 252, 0.55);
+}
+.playhead::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -30px;
+  width: 60px;
+  background: radial-gradient(closest-side, rgba(45, 212, 191, 0.2), transparent);
+  opacity: 0.7;
+}
+.playhead-pill {
+  position: absolute;
+  z-index: 1;
+  top: 9px;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 10px 5px 8px;
+  border: 1px solid rgba(94, 234, 212, 0.6);
+  border-radius: 999px;
+  background: #0b1b2e;
+  color: var(--mint);
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 0 22px rgba(45, 212, 191, 0.35);
+  transform: translateX(-50%);
+}
+.playhead-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--mint);
+  box-shadow: 0 0 8px var(--mint);
+}
+
+.scrub {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: linear-gradient(180deg, rgba(232, 237, 247, 0.5), rgba(232, 237, 247, 0.12));
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  will-change: transform;
+}
+.scrub.is-on {
+  opacity: 1;
+}
+.scrub-label {
+  position: absolute;
+  bottom: 8px;
+  left: 7px;
+  padding: 4px 7px;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  background: rgba(13, 21, 41, 0.95);
+  color: var(--ink-2);
+  font: 500 10.5px/1 var(--mono);
+  white-space: nowrap;
+}
+.scrub.is-flip .scrub-label {
+  left: auto;
+  right: 7px;
+}
+
+/* ── Tooltip ── */
+
+.tip {
+  --tc: var(--cyan);
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  left: 0;
+  width: 330px;
+  max-width: calc(100% - 24px);
+  padding: 14px 16px 6px;
+  border: 1px solid var(--line-2);
+  border-radius: 15px;
+  background: rgba(12, 20, 40, 0.97);
+  box-shadow:
+    0 30px 70px -20px rgba(0, 0, 0, 0.8),
+    0 0 60px -24px color-mix(in srgb, var(--tc) 70%, transparent);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(var(--x, 0px), calc(var(--y, 0px) + 6px));
+  transition:
+    opacity 0.16s ease,
+    transform 0.22s var(--ease-out),
+    visibility 0s linear 0.22s;
+}
+.tip.is-on {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(var(--x, 0px), var(--y, 0px));
+  transition:
+    opacity 0.16s ease,
+    transform 0.22s var(--ease-out),
+    visibility 0s;
+}
+.tip-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-3);
+  font: 500 11px/1 var(--mono);
+  letter-spacing: 0.04em;
+}
+.tip-id {
+  color: var(--tc);
+}
+.tip-status {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--ink-2);
+}
+.tip-title {
+  margin-top: 11px;
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.012em;
+}
+.tip-when {
+  margin-top: 5px;
+  color: var(--ink-3);
+  font: 400 12px/1.4 var(--mono);
+}
+.tip-outcome {
+  margin-top: 10px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.tip-launch {
+  display: none;
+  align-items: center;
+  gap: 9px;
+  margin-top: 9px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.tip.has-launch .tip-launch {
+  display: flex;
+}
+.tip-dia {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--tc);
+  box-shadow: 0 0 10px var(--tc);
+  transform: rotate(45deg);
+}
+.tip-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  color: var(--cyan);
+  font: 500 12px/1 var(--mono);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+.tip-link:hover {
+  color: var(--ink);
+}
+.tip-link .glyph {
+  width: 14px;
+  height: 14px;
+}
+@media (hover: none) {
+  .tip-link {
+    min-height: 48px;
+  }
+}
+.tip-arrow {
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-right: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  background: rgb(12, 20, 40);
+  transform: translateX(var(--ax, 160px)) rotate(45deg);
+}
+/* One arrow per side, swapped with opacity, so flipping the tooltip never moves a box. */
+.tip::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 0;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-left: 1px solid var(--line-2);
+  border-top: 1px solid var(--line-2);
+  background: rgb(12, 20, 40);
+  opacity: 0;
+  transform: translateX(var(--ax, 160px)) rotate(45deg);
+}
+.tip[data-side='bottom']::before {
+  opacity: 1;
+}
+.tip[data-side='bottom'] .tip-arrow {
+  opacity: 0;
+}
+
+/* ── Board footer ── */
+
+.board-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 32px;
+  padding: 16px 22px 18px;
+  border-top: 1px solid var(--line);
+}
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 30px;
+}
+.stats li {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  color: var(--ink-3);
+  font-size: 13.5px;
+  line-height: 1.4;
+}
+.stats strong {
+  flex: none;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 740;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.board-hint {
+  color: var(--ink-4);
+  font: 400 12px/1.5 var(--mono);
+}
+.hint-touch,
+.hint-list {
+  display: none;
+}
+@media (hover: none) {
+  .hint-pointer {
+    display: none;
+  }
+  .hint-touch {
+    display: inline;
+  }
+}
+
+/* ── Desktop-only details ── */
+
+@media (min-width: 900px) {
+  .item-text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* The desktop board plays its own intro, so its lanes skip the generic reveal. */
+  html.js .lane[data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1100px) {
+  .board {
+    --label-w: 164px;
+    --pr: 16px;
+  }
+  .lane-head {
+    padding-left: 18px;
+    font-size: 13px;
+  }
+  .lane-count {
+    display: none;
+  }
+}
+
+/* The intro: a playhead sweeps from 2023 to today and draws every bar as it passes. */
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+  html.js .board:not(.is-playing) .item-fill {
+    transform: scaleX(0);
+  }
+  html.js .board:not(.is-playing) :is(.item-label, .item-diamond, .playhead-pill, .future) {
+    opacity: 0;
+  }
+  html.js .board:not(.is-playing) .playhead {
+    opacity: 0;
+    transform: translateX(0);
+  }
+
+  /* .is-done (set by the script when the intro ends) drops these rules, so a later
+     resize across the breakpoint can never replay the intro or blank the board. */
+  html.js .board.is-playing:not(.is-done) .item-fill {
+    animation: grow calc((var(--e) - var(--s)) * var(--D)) linear calc(var(--s) * var(--D) + var(--lead)) both;
+  }
+  html.js .board.is-playing:not(.is-done) .item-label {
+    animation: fade 0.5s var(--ease-out) calc(var(--e) * var(--D) + var(--lead) - 0.1s) both;
+  }
+  html.js .board.is-playing:not(.is-done) .bar.is-out .item-label {
+    animation-delay: calc(var(--s) * var(--D) + var(--lead));
+  }
+  html.js .board.is-playing:not(.is-done) .item-diamond {
+    animation: pop 0.6s var(--ease-out) calc(var(--e) * var(--D) + var(--lead)) both;
+  }
+  html.js .board.is-playing:not(.is-done) .playhead {
+    animation: sweep calc(var(--today) * var(--D)) linear var(--lead) both;
+  }
+  html.js .board.is-playing:not(.is-done) :is(.playhead-pill, .future) {
+    animation: fade 0.6s var(--ease-out) calc(var(--today) * var(--D) + var(--lead)) both;
+  }
+  html.js .board.is-playing .playhead::after {
+    animation: halo 3.4s ease-in-out calc(var(--today) * var(--D) + var(--lead) + 0.6s) infinite;
+  }
+
+  @keyframes grow {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes pop {
+    0% {
+      opacity: 0;
+      transform: rotate(45deg) scale(0.2);
+    }
+    55% {
+      opacity: 1;
+      transform: rotate(45deg) scale(1.45);
+    }
+    100% {
+      opacity: 1;
+      transform: rotate(45deg) scale(1);
+    }
+  }
+  @keyframes sweep {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(calc(var(--today) * 100%));
+    }
+  }
+  @keyframes halo {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+}
+
+/* ── Mobile: the task-list Gantt ── */
+
+@media (max-width: 899px) {
+  .board {
+    --label-w: 0px;
+    --pr: 0px;
+    --lane-pad: 14px;
+    --row-pad: 14px;
+    border-radius: 18px;
+  }
+  .board-bar {
+    padding: 14px 16px;
+    gap: 12px;
+  }
+  .board-title h2 {
+    font-size: 20px;
+  }
+  .legend {
+    gap: 8px 16px;
+    font-size: 11.5px;
+  }
+
+  .axis {
+    position: sticky;
+    top: var(--top-h);
+    z-index: 4;
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: calc(var(--lane-pad) + 1px + var(--row-pad));
+    border-bottom: 1px solid var(--line);
+    background: rgba(13, 21, 43, 0.94);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+  .axis-corner,
+  .axis-quarters {
+    display: none;
+  }
+  .axis-time {
+    position: relative;
+    margin: 0;
+  }
+  /* Today, marked on the sticky axis: the anchor for the tick on every row below. */
+  .axis-time::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: calc(var(--today) * 100%);
+    width: 2px;
+    height: 11px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: linear-gradient(var(--cyan), var(--teal));
+    box-shadow: 0 0 8px rgba(45, 212, 191, 0.9);
+  }
+  .axis-years > span {
+    padding: 10px 0 10px 5px;
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+  .axis-years > span:first-child {
+    border-left-color: var(--line-2);
+  }
+  .axis-years b {
+    display: none;
+  }
+  .axis-years i {
+    display: inline;
+  }
+  .axis-years > span:last-child {
+    padding-right: 0;
+  }
+
+  .time-under,
+  .time-over,
+  .tip {
+    display: none;
+  }
+
+  .lanes {
+    padding-bottom: 10px;
+  }
+  .lane {
+    grid-template-columns: minmax(0, 1fr);
+    padding-inline: var(--lane-pad);
+    border-bottom: 0;
+  }
+  .lane-head {
+    padding: 20px 2px 10px;
+    border-right: 0;
+    color: var(--ink-3);
+    font: 500 11.5px/1 var(--mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .lane-head .lane-dot {
+    width: 7px;
+    height: 7px;
+  }
+  .lane-count {
+    display: none;
+  }
+  .lane-track {
+    display: grid;
+    gap: 8px;
+    height: auto;
+    margin: 0;
+  }
+
+  .bar {
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
+    height: auto;
+  }
+  .item {
+    position: relative;
+    inset: auto;
+    display: block;
+    padding: 13px var(--row-pad) 36px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.025);
+    container-type: normal;
+    transition:
+      border-color 0.2s,
+      background-color 0.2s,
+      transform 0.15s var(--ease);
+  }
+  .item:active {
+    transform: scale(0.99);
+    background: rgba(255, 255, 255, 0.05);
+  }
+  .item:focus-visible {
+    outline-color: var(--cyan);
+    border-radius: 14px;
+  }
+  .bar-epic .item,
+  .bar-next .item {
+    right: auto;
+    left: auto;
+  }
+  .item-label {
+    display: none;
+  }
+  .item-text {
+    display: grid;
+    gap: 5px;
+  }
+  .item-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--ink-3);
+    font: 500 11.5px/1 var(--mono);
+  }
+  .item-id {
+    color: var(--c);
+    letter-spacing: 0.04em;
+  }
+  .item-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .item-status .status-icon {
+    width: 13px;
+    height: 13px;
+  }
+  .item-title {
+    color: var(--ink);
+    font-size: 15.5px;
+    font-weight: 660;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+  }
+  .item-when {
+    color: var(--ink-3);
+    font: 400 12px/1.4 var(--mono);
+  }
+  .item-launch {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--ink-2);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .item-launch::before {
+    content: '';
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 1.5px;
+    background: var(--c);
+    box-shadow: 0 0 8px var(--c);
+    transform: rotate(45deg);
+  }
+
+  /* Each row's own track, on the shared scale. */
+  .item::before {
+    content: '';
+    position: absolute;
+    left: var(--row-pad);
+    right: var(--row-pad);
+    bottom: 15px;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.07);
+  }
+  .item-fill {
+    inset: auto;
+    left: calc(var(--row-pad) + var(--s) * (100% - 2 * var(--row-pad)));
+    width: max(6px, calc((var(--e) - var(--s)) * (100% - 2 * var(--row-pad))));
+    bottom: 15px;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, transparent), var(--c));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--c) 50%, transparent);
+  }
+  .is-ongoing > .item .item-fill {
+    border-radius: 3px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent), var(--c));
+  }
+  .bar-next .item-fill {
+    background: repeating-linear-gradient(90deg, rgba(125, 211, 252, 0.85) 0 4px, transparent 4px 7px);
+    box-shadow: none;
+  }
+  .bar-next .item-fill::before {
+    display: none;
+  }
+  .bar-next .item-title {
+    color: var(--cyan);
+  }
+  .bar-epic .item-fill {
+    background: linear-gradient(90deg, rgba(232, 237, 247, 0.35), rgba(165, 180, 252, 0.95));
+    box-shadow: 0 0 12px rgba(165, 180, 252, 0.45);
+  }
+  .item-diamond {
+    top: auto;
+    right: auto;
+    bottom: 13px;
+    left: calc(var(--row-pad) + var(--e) * (100% - 2 * var(--row-pad)));
+    width: 10px;
+    height: 10px;
+    margin: 0 0 0 -5px;
+    box-shadow:
+      0 0 0 2.5px #0e1731,
+      0 0 12px color-mix(in srgb, var(--c) 85%, transparent);
+  }
+  /* Today tick on every row: down the list they line up into one dotted "today" line.
+     It sits under the launch diamond, which comes later in the markup. */
+  .item-now {
+    display: block;
+    position: absolute;
+    left: calc(var(--row-pad) + var(--today) * (100% - 2 * var(--row-pad)));
+    bottom: 10px;
+    width: 2px;
+    height: 16px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: linear-gradient(var(--cyan), var(--teal));
+    box-shadow: 0 0 8px rgba(45, 212, 191, 0.9);
+  }
+  .item::after {
+    inset: -1px;
+    border-radius: 14px;
+  }
+
+  .board-foot {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+  }
+  .stats {
+    display: grid;
+    gap: 10px;
+  }
+  .hint-pointer,
+  .hint-touch {
+    display: none !important;
+  }
+  .hint-list {
+    display: inline;
+  }
+}
+
+@media (max-width: 899px) and (prefers-reduced-motion: no-preference) {
+  html.js .lane:not(.is-in) .item-fill {
+    transform: scaleX(0);
+  }
+  html.js .lane.is-in:not(.is-settled) .item-fill {
+    animation: grow-m 1s var(--ease-out) 0.2s both;
+  }
+  html.js .lane:not(.is-in) .item-diamond {
+    opacity: 0;
+  }
+  html.js .lane.is-in:not(.is-settled) .item-diamond {
+    animation: pop-m 0.55s var(--ease-out) 0.95s both;
+  }
+  @keyframes grow-m {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+  @keyframes pop-m {
+    0% {
+      opacity: 0;
+      transform: rotate(45deg) scale(0.2);
+    }
+    60% {
+      opacity: 1;
+      transform: rotate(45deg) scale(1.4);
+    }
+    100% {
+      opacity: 1;
+      transform: rotate(45deg) scale(1);
+    }
+  }
+}

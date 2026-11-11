@@ -1,0 +1,106 @@
+---
+/**
+ * A case study written as a ticket: stub with ID and status, outcome line, an attached
+ * illustration, acceptance criteria (the points), and a properties panel whose
+ * mini-timeline matches the bar on the roadmap.
+ */
+import { langOf } from '../copy';
+import { YEARS, getData, type Project } from '../data';
+import StatusIcon from './StatusIcon.astro';
+import Glyph from './Glyph.astro';
+import Visual from './Visual.astro';
+
+interface Props {
+  p: Project;
+  featured?: boolean;
+}
+
+const { p, featured = false } = Astro.props;
+const { t, laneById } = getData(langOf(Astro.url));
+const lane = laneById[p.lane];
+const n = p.points.length;
+const titleId = `t-${p.key}-title`;
+---
+
+<article
+  class:list={['ticket', { 'ticket-featured': featured, 'is-ongoing': p.ongoing }]}
+  id={`t-${p.key}`}
+  style={`--c:${lane.color};--s:${p.s.toFixed(4)};--e:${p.eCss}`}
+  aria-labelledby={titleId}
+  data-reveal
+>
+  <div class="ticket-stub" aria-hidden="true">
+    <span class="stub-id">{p.id}</span>
+    <StatusIcon status={p.status} />
+  </div>
+
+  <div class="ticket-main">
+    <p class="ticket-crumb">
+      <span class="crumb-lane"><span class="lane-dot" aria-hidden="true"></span>{lane.label}</span>
+      <span class="crumb-sep" aria-hidden="true">/</span>
+      <span class="crumb-id">{p.id}</span>
+    </p>
+    <h3 class="ticket-title" id={titleId}>{p.title}</h3>
+    <p class="ticket-outcome"><span class="k">{t.ticket.outcome}</span> <span class="v">{p.outcome}</span></p>
+    <p class="ticket-context">{p.context}</p>
+
+    <details class="ac" open>
+      <summary class="ac-head" id={`t-${p.key}-ac`}>
+        <span>{t.ticket.ac}</span>
+        <span class="ac-count"><span class="sr-only">{t.ticket.all}</span>{n}/{n}<span class="sr-only">{t.ticket.met}</span></span>
+        <span class="ac-chev" aria-hidden="true"></span>
+      </summary>
+      <ul class="ac-list" aria-labelledby={`t-${p.key}-ac`}>
+        {
+          p.points.map((pt, i) => (
+            <li style={`--i:${i}`}>
+              <span class="ac-box" aria-hidden="true">
+                <svg viewBox="0 0 16 16" width="16" height="16" focusable="false">
+                  <path d="m4.2 8.4 2.5 2.5 5.1-5.6" />
+                </svg>
+              </span>
+              <span class="ac-text">{pt}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </details>
+  </div>
+
+  <div class="ticket-props">
+    <figure class="att" aria-hidden="true">
+      <figcaption><span>{t.ticket.attachment}</span><span>{p.key}.svg</span></figcaption>
+      <Visual k={p.key} />
+    </figure>
+    <dl>
+      <div class="tp">
+        <dt>{t.ticket.status}</dt>
+        <dd class="tp-status"><StatusIcon status={p.status} />{t.status[p.status]}</dd>
+      </div>
+      <div class="tp">
+        <dt>{t.ticket.lane}</dt>
+        <dd><span class="lane-dot" aria-hidden="true"></span>{lane.label}</dd>
+      </div>
+      <div class="tp tp-when">
+        <dt>{t.ticket.timeline}</dt>
+        <dd>
+          <span aria-hidden="true">{p.when}</span><span class="sr-only">{p.whenA11y}</span>
+          <span class="mini" aria-hidden="true">
+            <span class="mini-track">
+              <span class="mini-fill"></span>
+              <span class="mini-today"></span>
+            </span>
+            <span class="mini-years">{YEARS.map((y) => <span style={`--span:${y.quarters}`}>’{String(y.year).slice(2)}</span>)}</span>
+          </span>
+        </dd>
+      </div>
+      <div class="tp tp-stack">
+        <dt>{t.ticket.stack}</dt>
+        <dd>
+          <ul class="chips">{p.stack.map((s) => <li>{s}</li>)}</ul>
+        </dd>
+      </div>
+    </dl>
+    <a class="to-board" href={`#bar-${p.key}`}><Glyph name="up" />{t.ticket.show}<span class="sr-only"> ({p.id})</span></a>
+  </div>
+</article>

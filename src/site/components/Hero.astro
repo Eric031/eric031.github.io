@@ -1,0 +1,69 @@
+---
+import { langOf, name, email, STUDIO } from '../copy';
+import { getData } from '../data';
+import Glyph from './Glyph.astro';
+
+const { t } = getData(langOf(Astro.url));
+const [first, ...rest] = name.split(' ');
+
+// Faded code, as on the LinkedIn banner. Decorative.
+const code = `const site = await build({
+  adapter: "static",
+  integrations: [tailwind()],
+});
+
+deploy.on("push:main", async () => {
+  await preflight(dist);
+  await ftps.sync(dist);
+});
+
+// dns: spf · dkim · dmarc
+// cdn: cloudflare · cache rules`;
+---
+
+<section class="hero" id="top" aria-labelledby="hero-title">
+  <div class="hero-grid" aria-hidden="true"></div>
+  <pre class="hero-code" aria-hidden="true">{code}</pre>
+
+  <div class="wrap hero-in">
+    <p class="kicker" data-hero="1">{t.hero.kicker}</p>
+
+    <h1 class="hero-title" id="hero-title">
+      <span class="hero-name" data-hero="2">{first} <span class="hero-name-last">{rest.join(' ')}</span></span>
+      <span class="hero-role" data-hero="3">
+        {t.hero.headline} <span class="hero-role-accent">{t.hero.accent}</span>
+      </span>
+    </h1>
+
+    <p class="hero-lead" data-hero="4">{t.hero.lead}</p>
+
+    <dl class="props" data-hero="5">
+      <div class="prop">
+        <dt>{t.hero.props.status}</dt>
+        <dd><span class="live-dot" aria-hidden="true"></span>{t.hero.open}</dd>
+      </div>
+      <div class="prop">
+        <dt>{t.hero.props.base}</dt>
+        <dd>{t.hero.baseValue}</dd>
+      </div>
+      <div class="prop prop-mail">
+        <dt>{t.hero.props.email}</dt>
+        <dd>
+          <a class="prop-mail-link" href={`mailto:${email}`}>{email}</a>
+          <button class="copy" type="button" data-copy={email} aria-label={t.hero.copyAria}>
+            <Glyph name="copy" />
+            <span data-copy-label>{t.hero.copy}</span>
+          </button>
+        </dd>
+      </div>
+      <div class="prop">
+        <dt>{t.hero.props.time}</dt>
+        <dd><span class="clock" data-clock>CET</span></dd>
+      </div>
+      <div class="prop">
+        <dt>{t.hero.props.studio}</dt>
+        <dd><a href="#studio">{STUDIO.name}</a></dd>
+      </div>
+    </dl>
+  </div>
+</section>

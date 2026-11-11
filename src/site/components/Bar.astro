@@ -1,0 +1,87 @@
+---
+/**
+ * One bar on the roadmap.
+ * Desktop: an absolutely positioned bar in its lane (short label inside, details in the tooltip).
+ * Mobile:  the same element becomes a task-list row with its own track (see board.css).
+ * The link text (.item-text) is the real text equivalent: visible on mobile, screen-reader-only on desktop.
+ */
+import type { Status } from '../data';
+import StatusIcon from './StatusIcon.astro';
+
+interface Props {
+  variant: 'project' | 'epic' | 'next';
+  anchor: string;
+  href: string;
+  id: string;
+  title: string;
+  label: string;
+  when: string;
+  whenA11y: string;
+  outcome: string;
+  laneLabel: string;
+  cta: string;
+  s: string;
+  e: string;
+  row: number;
+  status?: Status;
+  statusLabel: string;
+  ongoing?: boolean;
+  launch?: string;
+  launchSr?: string;
+  showId?: boolean;
+  /** Words that may drop when the bar is narrow. */
+  labelTail?: string;
+}
+
+const p = Astro.props;
+---
+
+<li
+  class:list={['bar', `bar-${p.variant}`, { 'is-ongoing': p.ongoing, 'has-launch': !!p.launch }]}
+  style={`--s:${p.s};--e:${p.e};--row:${p.row}`}
+>
+  <a
+    class="item"
+    id={p.anchor}
+    href={p.href}
+    data-tip
+    data-id={p.id}
+    data-status={p.statusLabel}
+    data-title={p.title}
+    data-when={p.when}
+    data-outcome={p.outcome}
+    data-launch={p.launch}
+    data-lane={p.laneLabel}
+    data-cta={p.cta}
+  >
+    <span class="item-fill" aria-hidden="true"></span>
+    <span class="item-now" aria-hidden="true"></span>
+    <span class="item-label" aria-hidden="true">
+      {p.showId && <span class="item-label-id">{p.id}</span>}
+      <span class="item-label-text">{p.label}{p.labelTail && <span class="item-label-tail">{p.labelTail}</span>}</span>
+    </span>
+    <span class="item-text">
+      <span class="item-meta">
+        <span class="item-id">{p.id}</span>
+        <span class="item-status">
+          {p.status && <StatusIcon status={p.status} />}
+          {p.statusLabel}
+        </span>
+      </span>
+      <span class="item-title">{p.title}</span>
+      <span class="item-when">
+        <span aria-hidden="true">{p.when}</span>
+        <span class="sr-only">{p.whenA11y}.</span>
+      </span>
+      {
+        p.launch && (
+          <span class="item-launch">
+            <span class="sr-only">{p.launchSr}</span>
+            {p.launch}
+          </span>
+        )
+      }
+    </span>
+    {p.launch && <span class="item-diamond" aria-hidden="true" />}
+  </a>
+</li>
