@@ -1,6 +1,6 @@
 # eric031.github.io
 
-Personal site of Dušan Erić: frontend development and project management.
+Personal site of Dušan Erić: frontend development and project management. Live at **https://dusan-eric.is-a.dev**.
 
 The site is one planning tool: an interactive roadmap of the work, case studies written as tickets, the BAT DEV studio, a Plan / Build / Run skills board and a changelog of experience.
 
